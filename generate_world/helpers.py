@@ -1,5 +1,6 @@
-from pathlib import Path
 import re
+from pathlib import Path
+
 
 def get_next_run_directory(base_dir: Path) -> Path:
     """
