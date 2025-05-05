@@ -17,7 +17,10 @@
 from google.adk import Agent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
-from google.adk.tools import google_search
+from google.adk.tools import google_search, VertexAiSearchTool
+from google.adk.tools.retrieval.vertex_ai_rag_retrieval import VertexAiRagRetrieval
+from vertexai.preview import rag
+
 from google.genai import types
 
 from . import prompt
@@ -59,11 +62,47 @@ def _render_reference(
         del llm_response.content.parts[1:]
     return llm_response
 
+vertex_ai_search_tool = VertexAiSearchTool(data_store_id="generative-ai-app-builder_1745012742520")
+
+
+ask_vertex_retrieval = VertexAiRagRetrieval(
+    name='retrieve_rag_documentation',
+    description=(
+        'Use this tool to retrieve documentation and reference materials for the question from the RAG corpus,'
+    ),
+    rag_resources=[
+        rag.RagResource(
+            rag_corpus="projects/ivanmkc-test/locations/us-central1/ragCorpora/5188146770730811392"
+        )
+    ],
+    similarity_top_k=10,
+    vector_distance_threshold=0.6,
+)
+
+from google.adk.agents import Agent
+from google.adk.tools.agent_tool import AgentTool
+
+from google.adk.tools.google_search_tool import google_search
+
+_search_agent = Agent(
+    model="gemini-2.0-flash",
+    name="google_search_grounding",
+    description="An agent providing Google-search grounding capability",
+    instruction=""",
+    Answer the user's question directly using google_search grounding tool; Provide a brief but concise response. 
+    Rather than a detail response, provide the immediate actionable item for a tourist or traveler, in a single sentence.
+    Do not ask the user to check or look up information for themselves, that's your role; do your best to be informative.
+    """,
+    tools=[google_search],
+)
+
+google_search_grounding = AgentTool(agent=_search_agent)
 
 critic_agent = Agent(
-    model='gemini-2.0-flash',
+    # model='gemini-2.0-flash',
+    model='gemini-2.0-flash-001',
     name='critic_agent',
     instruction=prompt.CRITIC_PROMPT,
-    tools=[google_search],
+    tools=[google_search, ask_vertex_retrieval],
     after_model_callback=_render_reference,
 )

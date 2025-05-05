@@ -54,3 +54,25 @@ class TestAgents(unittest.TestCase):
         # The answer in the input is wrong, so we expect the agent to provided a
         # revised answer, and the correct answer should mention scattering.
         self.assertIn("scattering", response.lower())
+
+    def test_custom_corpora(self):
+        """Runs the agent on a simple input and expects a normal response."""
+        user_input = textwrap.dedent("""
+            Double check this:
+            Question: Why is FANC?
+            Answer: It stands for Formality, Assertiveness, Negativity and Creativeness.
+        """).strip()
+
+        runner = InMemoryRunner(agent=root_agent)
+        session = runner.session_service.create_session(
+            app_name=runner.app_name, user_id="test_user"
+        )
+        content = UserContent(parts=[Part(text=user_input)])
+        events = list(runner.run(
+            user_id=session.user_id, session_id=session.id, new_message=content
+        ))
+        response = events[-1].content.parts[0].text
+
+        # The answer in the input is wrong, so we expect the agent to provided a
+        # revised answer, and the correct answer should mention scattering.
+        self.assertIn("faithfulness", response.lower())
