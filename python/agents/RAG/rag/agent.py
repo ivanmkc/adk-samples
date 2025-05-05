@@ -17,6 +17,7 @@ import os
 from google.adk.agents import Agent
 from google.adk.tools.retrieval.vertex_ai_rag_retrieval import VertexAiRagRetrieval
 from vertexai.preview import rag
+from google.adk.tools import google_search
 
 from dotenv import load_dotenv
 from .prompts import return_instructions_root
@@ -33,7 +34,7 @@ ask_vertex_retrieval = VertexAiRagRetrieval(
             # please fill in your own rag corpus
             # here is a sample rag corpus for testing purpose
             # e.g. projects/123/locations/us-central1/ragCorpora/456
-            rag_corpus=os.environ.get("RAG_CORPUS")
+            rag_corpus="projects/ivanmkc-test/locations/us-central1/ragCorpora/5188146770730811392"
         )
     ],
     similarity_top_k=10,
