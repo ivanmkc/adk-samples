@@ -33,8 +33,8 @@ GeneratedCorpus = Dict[str, GeneratedArticleData]
 # --- Module 1: Fact and Subtopic Generation ---
 class FactsGeneratorSignature(dspy.Signature):
     """
-    Given a main topic, its description, and all ancestral facts for context,
-    generate a list of discrete facts about the main topic. Make sure your new facts are consistent with and build off of the ancestral facts.
+    Given a main topic, its description, and all existing facts for context,
+    generate a list of discrete facts about the main topic. Make sure your new facts are consistent with and build off of the existing facts.
     Be specific, generously include names, places, historical figures and dates to improve detail.
     Use numbers/figures in order to quantify and add detail.
     For example, an article about trade should talk about specific trade partners, treaties, trade goods, etc.
@@ -47,7 +47,7 @@ class FactsGeneratorSignature(dspy.Signature):
     topic_description: str = dspy.InputField(
         desc="A detailed description of the main topic."
     )
-    ancestral_facts: list[str] = dspy.InputField(desc="All relevant ancestral facts.")
+    existing_facts: list[str] = dspy.InputField(desc="All relevant existing facts.")
 
     facts: List[str] = dspy.OutputField(
         desc="A list of specific facts about the topic. MUST contain at least 5 facts."
@@ -56,10 +56,10 @@ class FactsGeneratorSignature(dspy.Signature):
 
 class SubtopicsGeneratorSignature(dspy.Signature):
     """
-    Given a main topic, its description, facts and all ancestral facts for context,
+    Given a main topic, its description, facts and all existing facts for context,
     generate a list of relevant subtopics (with their descriptions) to explore further.
-    Make sure your new subtopics are consistent with and build off of the ancestral facts.
-    Aim for 2-4 relevant subtopics.
+    Make sure your new subtopics are consistent with and build off of the existing facts.
+    Avoid duplicating an existing existing subtopic.
     """
 
     topic_name: str = dspy.InputField(
@@ -69,7 +69,10 @@ class SubtopicsGeneratorSignature(dspy.Signature):
         desc="A detailed description of the main topic."
     )
     facts: List[str] = dspy.InputField(desc="A list of specific facts about the topic.")
-    ancestral_facts: list[str] = dspy.InputField(desc="All relevant ancestral facts.")
+    existing_facts: list[str] = dspy.InputField(desc="All relevant existing facts.")
+    existing_subtopics: list[str] = dspy.InputField(
+        desc="All relevant existing facts. Avoid creating a new subtopic that duplicates an existing one."
+    )
     num_subtopics: int = dspy.InputField(desc="Number of subtopics to generate")
 
     subtopics: List[SubtopicDetail] = dspy.OutputField(desc="A list of subtopics")
@@ -89,20 +92,22 @@ class FactAndSubtopicGenerator(dspy.Module):
         self,
         topic_name: str,
         topic_description: str,
-        ancestral_facts: List[str],
+        existing_facts: List[str],
+        existing_subtopics: List[str],
         num_subtopics: int,
     ) -> dspy.Prediction:
         facts = self.facts_generator(
             topic_name=topic_name,
             topic_description=topic_description,
-            ancestral_facts=ancestral_facts,
+            existing_facts=existing_facts,
         ).facts
 
         subtopics = self.subtopics_generator(
             topic_name=topic_name,
             topic_description=topic_description,
             facts=facts,
-            ancestral_facts=ancestral_facts,
+            existing_facts=existing_facts,
+            existing_subtopics=existing_subtopics,
             num_subtopics=num_subtopics,
         ).subtopics
 
@@ -112,7 +117,7 @@ class FactAndSubtopicGenerator(dspy.Module):
 # --- Module 2: Article Expansion from Facts ---
 class ArticleFromFactsSignature(dspy.Signature):
     """
-    Given a topic name, a list of facts about it, and a formatted string of all ancestral facts, expand these facts into a coherent, well-structured article.
+    Given a topic name, a list of facts about it, and a formatted string of all existing facts, expand these facts into a coherent, well-structured article.
     The length of the article should be appropriate for the number and detail of facts provided.
     The article MUST be in Markdown format and MUST NOT contain any external or internal hyperlinks.
     """
@@ -121,8 +126,8 @@ class ArticleFromFactsSignature(dspy.Signature):
     facts: list[str] = dspy.InputField(
         desc="A list of facts specifically about this topic"
     )
-    ancestral_facts: list[str] = dspy.InputField(
-        desc="All relevant ancestral facts, formatted as a list"
+    existing_facts: list[str] = dspy.InputField(
+        desc="All relevant existing facts, formatted as a list"
     )
 
     article_content: str = dspy.OutputField(
@@ -138,10 +143,10 @@ class ArticleFromFactsGenerator(dspy.Module):
         )
 
     def forward(
-        self, topic_name: str, facts: List[str], ancestral_facts: List[str]
+        self, topic_name: str, facts: List[str], existing_facts: List[str]
     ) -> dspy.Prediction:
         return self.generate(
-            topic_name=topic_name, facts=facts, ancestral_facts=ancestral_facts
+            topic_name=topic_name, facts=facts, existing_facts=existing_facts
         )
 
 
@@ -172,8 +177,11 @@ class WorldCorpusBuilder:
         )
         self.queue.append((self.topic_name, self.topic_description, 0))
 
-        ancestral_facts = []
+        existing_facts = []
+        existing_subtopics = []
         while self.queue:
+            print("\n\n")
+            print(f"Current queue size = {len(self.queue)}")
             topic_name, topic_description, depth = self.queue.popleft()
             current_indent: str = log_indent_char * (depth + 1)
 
@@ -195,10 +203,11 @@ class WorldCorpusBuilder:
             fs_prediction = self.fact_subtopic_generator(
                 topic_name=topic_name,
                 topic_description=topic_description,
-                ancestral_facts=ancestral_facts,
-                num_subtopics=8
+                existing_facts=existing_facts,
+                existing_subtopics=existing_subtopics,
+                num_subtopics=6
                 if depth == 0
-                else 4,  # Top-level should have a breadth of subtopics.
+                else 3,  # Top-level should have a breadth of subtopics.
             )
 
             # If they are present but not the correct type (e.g. still a string), a TypeError might occur later.
@@ -210,7 +219,7 @@ class WorldCorpusBuilder:
             article_prediction: dspy.Prediction = self.article_generator(
                 topic_name=topic_name,
                 facts=fs_prediction.facts,
-                ancestral_facts=ancestral_facts,
+                existing_facts=existing_facts,
             )
             print(f"{current_indent}  Article generated for '{topic_name}'.")
 
@@ -222,22 +231,23 @@ class WorldCorpusBuilder:
             )
             self.generated_corpus[topic_name] = article_data_entry
 
-            ancestral_facts.extend(fs_prediction.facts)
+            existing_facts.extend(fs_prediction.facts)
+            existing_subtopics.extend(fs_prediction.subtopics)
 
             if depth < self.max_depth:
                 if fs_prediction.subtopics:
                     print(
                         f"{current_indent}  Queueing {len(fs_prediction.subtopics)} subtopics for next level (depth {depth + 1}):"
                     )
-                    for sub_item_pydantic in fs_prediction.subtopics:
+                    for subtopic in fs_prediction.subtopics:
                         # Ensure sub_item_pydantic is indeed a SubtopicDetail instance if list is not empty
-                        if not isinstance(sub_item_pydantic, SubtopicDetail):
+                        if not isinstance(subtopic, SubtopicDetail):
                             print(
-                                f"{current_indent}    - WARNING: Item in subtopics_pydantic_list is not a SubtopicDetail object: {sub_item_pydantic}. Skipping."
+                                f"{current_indent}    - WARNING: Item in subtopics_pydantic_list is not a SubtopicDetail object: {subtopic}. Skipping."
                             )
                             continue
-                        sub_name = sub_item_pydantic.name
-                        sub_desc = sub_item_pydantic.description
+                        sub_name = subtopic.name
+                        sub_desc = subtopic.description
                         if sub_name and sub_name not in self.visited_topics:
                             print(
                                 f"{current_indent}    - Adding '{sub_name}' (Desc: '{sub_desc[:30]}...') to queue."
@@ -245,7 +255,7 @@ class WorldCorpusBuilder:
                             self.queue.append((sub_name, sub_desc, depth + 1))
                         elif not sub_name:
                             print(
-                                f"{current_indent}    - Skipping subtopic with missing name: {sub_item_pydantic.model_dump_json()}"
+                                f"{current_indent}    - Skipping subtopic with missing name: {subtopic.model_dump_json()}"
                             )
                         else:
                             print(

@@ -72,7 +72,7 @@ ask_vertex_retrieval = VertexAiRagRetrieval(
     ),
     rag_resources=[
         rag.RagResource(
-            rag_corpus="projects/ivanmkc-test/locations/us-central1/ragCorpora/5188146770730811392"
+            rag_corpus='projects/169190568756/locations/us-central1/ragCorpora/1152921504606846976'
         )
     ],
     similarity_top_k=10,
@@ -103,6 +103,6 @@ critic_agent = Agent(
     model='gemini-2.0-flash-001',
     name='critic_agent',
     instruction=prompt.CRITIC_PROMPT,
-    tools=[google_search, ask_vertex_retrieval],
+    tools=[google_search_grounding, ask_vertex_retrieval],
     after_model_callback=_render_reference,
 )
