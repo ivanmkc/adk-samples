@@ -58,9 +58,8 @@ class TestAgents(unittest.TestCase):
     def test_custom_corpora(self):
         """Runs the agent on a simple input and expects a normal response."""
         user_input = textwrap.dedent("""
-            Double check this:
-            Question: Why is FANC?
-            Answer: It stands for Formality, Assertiveness, Negativity and Creativeness.
+            Verify this claim:
+            Blue Ridge Outfitters is headquartered in a small village far from any city.
         """).strip()
 
         runner = InMemoryRunner(agent=root_agent)
@@ -75,4 +74,4 @@ class TestAgents(unittest.TestCase):
 
         # The answer in the input is wrong, so we expect the agent to provided a
         # revised answer, and the correct answer should mention scattering.
-        self.assertIn("faithfulness", response.lower())
+        self.assertIn("asheville", response.lower())

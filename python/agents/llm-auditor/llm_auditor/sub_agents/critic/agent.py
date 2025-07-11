@@ -15,6 +15,7 @@
 """Critic agent for identifying and verifying statements using search tools."""
 
 from google.adk import Agent
+from google.adk.agents import SequentialAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
 from google.adk.tools import google_search, VertexAiSearchTool
@@ -75,7 +76,7 @@ ask_vertex_retrieval = VertexAiRagRetrieval(
             rag_corpus='projects/169190568756/locations/us-central1/ragCorpora/1152921504606846976'
         )
     ],
-    similarity_top_k=10,
+    similarity_top_k=10, # TODO: Sweep from 5, 10, 20
     vector_distance_threshold=0.6,
 )
 
@@ -98,11 +99,36 @@ _search_agent = Agent(
 
 google_search_grounding = AgentTool(agent=_search_agent)
 
-critic_agent = Agent(
-    # model='gemini-2.0-flash',
-    model='gemini-2.0-flash-001',
-    name='critic_agent',
+critic_agent_with_tools = Agent(
+    model='gemini-2.0-flash-001', # TODO: Get metrics for gemini-2.5-flash
+    name='critic_agent_with_tools',
     instruction=prompt.CRITIC_PROMPT,
     tools=[google_search_grounding, ask_vertex_retrieval],
-    after_model_callback=_render_reference,
+    after_model_callback=_render_reference,  
+)
+
+format_agent = Agent(
+    name="format_agent",
+    model='gemini-2.0-flash-001',
+    description=(
+        """
+        This is an agent that formats the answers from the agent 'critic_agent_with_tools'.
+        """
+    ),
+    instruction=(
+        """
+        You are an agent that formats the answers from the critique agent.
+        """
+    ),
+    output_schema=prompt.CriticOutput
+)
+
+critic_agent = SequentialAgent(
+    name="critic_agent",
+    description=(
+        """
+        This is the root agent that coordinates the critiquing and formatting.
+        """
+    ),
+    sub_agents=[critic_agent_with_tools, format_agent],
 )

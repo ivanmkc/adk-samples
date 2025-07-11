@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from pydantic import BaseModel, Field
+from typing import List, Literal
+
 
 """Prompt for the critic agent."""
 
@@ -63,3 +66,37 @@ The last block of your output should be a Markdown-formatted list, summarizing y
 
 Here is the question and answer you are going to double check:
 """
+
+
+class ClaimVerification(BaseModel):
+    """
+    Represents the verification result for a single claim within the answer text.
+    """
+    claim: str = Field(..., description="The claim as a standalone statement.")
+    answer_part: str = Field(..., description="The corresponding part of the answer text that contains the claim.")
+    verdict: Literal["Accurate", "Inaccurate", "Disputed", "Unsupported", "Not Applicable"] = Field(
+        ..., description="The verdict for the claim."
+    )
+    justification: str = Field(..., description="The reasoning behind the verdict, referencing sources or explaining 'Not Applicable'.")
+
+class OverallAssessment(BaseModel):
+    """
+    Represents the overall assessment of the entire answer text.
+    """
+    overall_verdict: Literal["Accurate", "Inaccurate", "Disputed", "Unsupported", "Partially Accurate"] = Field(
+        ..., description="The overall verdict for the entire answer text."
+    )
+    overall_justification: str = Field(
+        ..., description="Explanation of how individual claim evaluations led to the overall assessment and whether the answer addresses the original question successfully."
+    )
+
+class CriticOutput(BaseModel):
+    """
+    The structured output schema for the Critic's verification task.
+    """
+    claims_verification: List[ClaimVerification] = Field(
+        ..., description="A list of verified claims, each with its verdict and justification."
+    )
+    overall_assessment: OverallAssessment = Field(
+        ..., description="The overall assessment of the entire answer text."
+    )
