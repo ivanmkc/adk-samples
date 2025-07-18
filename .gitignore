@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+agents/llm-auditor/llm_auditor/mlruns/
+mlruns/
+output/
+python/agents/llm-auditor/claims/
+agents/llm-auditor/data/
