@@ -37,9 +37,14 @@ def _remove_end_of_edit_mark(
     return llm_response
 
 
-reviser_agent = Agent(
-    model='gemini-2.0-flash',
-    name='reviser_agent',
-    instruction=prompt.REVISER_PROMPT,
-    after_model_callback=_remove_end_of_edit_mark,
-)
+def create_reviser_agent(agent_name: str):
+    reviser_agent = Agent(
+        model='gemini-2.0-flash',
+        name=agent_name,
+        instruction=prompt.REVISER_PROMPT,
+        after_model_callback=_remove_end_of_edit_mark,
+    )
+
+    return reviser_agent
+
+reviser_agent = create_reviser_agent(agent_name="reviser_agent")
