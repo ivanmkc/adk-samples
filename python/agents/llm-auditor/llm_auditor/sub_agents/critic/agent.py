@@ -78,6 +78,8 @@ def create_critic_agent(
     Args:
         rag_corpus_id: The full resource name of the RAG corpus. If provided,
                        a RAG retrieval tool will be included.
+                       
+                       e.g. projects/ivanmkc-test/locations/us-central1/ragCorpora/8207810320882728960
         critic_agent_model: The model name for the main critic agent.
         format_agent_model: The model name for the final formatting agent.
 

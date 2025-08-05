@@ -5,7 +5,8 @@ from async_lru import alru_cache
 from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
 from google.genai.types import Part, UserContent
-
+from google.adk.events import Event
+from google.adk.plugins import LogCollectorPlugin
 
 class ClaimReviser:
     """
@@ -25,14 +26,17 @@ class ClaimReviser:
         """
         if not llm_auditor:
             raise ValueError("An llm_auditor agent instance is required.")
-        self.auditor_runner = InMemoryRunner(agent=llm_auditor)
+        
+        # TODO: Check if logger needs to be type-safe or not
+        self.logger = LogCollectorPlugin()
+        self.auditor_runner = InMemoryRunner(agent=llm_auditor, plugins=[self.logger])
 
     def _create_verification_prompt(self, claim: str) -> str:
         """Creates the prompt to send to the agent."""
         return f"Verify this claim: {claim}"
 
     @alru_cache(maxsize=None)
-    async def revise_claim(self, claim: str) -> str:
+    async def revise_claim(self, claim: str) -> list[Event]:
         """
         Revises a single claim using the configured runner session.
 
@@ -55,10 +59,11 @@ class ClaimReviser:
             events.append(event)
 
         # Assuming the final event contains the revised text
-        raw_text = events[-1].content.parts[0].text
-        return raw_text
+        # raw_text = events[-1].content.parts[0].text
+        # return raw_text
+        return events
 
-    async def revise_claim_async(self, claim: str, semaphore: asyncio.Semaphore) -> str | None:
+    async def revise_claim_async(self, claim: str, semaphore: asyncio.Semaphore) -> list[Event] | None:
         """
         A concurrent-safe wrapper for revising a single claim.
 

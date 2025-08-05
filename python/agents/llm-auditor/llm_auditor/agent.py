@@ -39,6 +39,8 @@ def create_llm_auditor(
         rag_corpus_id: Optional. The full resource name of the RAG corpus to be
             used by the underlying critic agent. If None, the RAG tool will not
             be used.
+
+            e.g. projects/ivanmkc-test/locations/us-central1/ragCorpora/8207810320882728960
         critic_agent_model: The model name for the core critiquing sub-agent
             within the `critic_agent`. This agent uses tools like Google Search
             and (optionally) RAG to perform the evaluation.
