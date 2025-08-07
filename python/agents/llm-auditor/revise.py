@@ -7,7 +7,7 @@ from google.adk.runners import InMemoryRunner
 from google.genai.types import Part, UserContent
 from google.adk.events import Event
 from google.adk.plugins import LogCollectorPlugin
-
+from typing import Any
 class ClaimReviser:
     """
     A service class to revise claims using a provided LLM auditor agent.
@@ -36,7 +36,7 @@ class ClaimReviser:
         return f"Verify this claim: {claim}"
 
     @alru_cache(maxsize=None)
-    async def revise_claim(self, claim: str) -> list[Event]:
+    async def revise_claim(self, claim: str) -> tuple[list[Event], Any]:
         """
         Revises a single claim using the configured runner session.
 
@@ -58,12 +58,14 @@ class ClaimReviser:
         ):
             events.append(event)
 
+        full_trace = self.logger.logs[session.id]
+
         # Assuming the final event contains the revised text
         # raw_text = events[-1].content.parts[0].text
         # return raw_text
-        return events
+        return events, full_trace
 
-    async def revise_claim_async(self, claim: str, semaphore: asyncio.Semaphore) -> list[Event] | None:
+    async def revise_claim_async(self, claim: str, semaphore: asyncio.Semaphore) -> tuple[list[Event], Any] | None:
         """
         A concurrent-safe wrapper for revising a single claim.
 
@@ -79,8 +81,8 @@ class ClaimReviser:
         """
         async with semaphore:
             try:
-                result = await self.revise_claim(claim=claim)
-                return result
+                result, trace = await self.revise_claim(claim=claim)
+                return result, trace
             except Exception as e:
                 print(f"An error occurred during evaluation of '{claim}': {e}")
                 return None

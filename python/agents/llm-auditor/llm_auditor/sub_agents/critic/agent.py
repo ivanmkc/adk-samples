@@ -101,7 +101,8 @@ def create_critic_agent(
     
     # Initialize the list of tools for the critic agent
     google_search_grounding = AgentTool(agent=_search_agent)
-    critic_tools = [google_search_grounding]
+    # critic_tools = [google_search_grounding]
+    critic_tools = []
 
     # Conditionally create and add the RAG tool if an ID is provided
     if rag_corpus_id:
