@@ -55,6 +55,8 @@ to implement this workflow.
         ```bash
         pip install poetry
         ```
+    *   PyTorch
+        *   This project requires PyTorch. It will be automatically installed as a CPU-only version when you run `poetry install`. If you need a different version of PyTorch (e.g., for GPU support), please modify the `pyproject.toml` file accordingly before running `poetry install`. Refer to the official [PyTorch website](https://pytorch.org/get-started/locally/) for instructions on installing other versions.
     *  Git
         *   Git can be downloaded from https://git-scm.com/. Then follow the [installation guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
