@@ -1,0 +1,17 @@
+[tool.poetry]
+packages = [{include = "file_delegation"}]
+
+[project]
+name = "file-delegation"
+version = "0.1.0"
+description = "A PoC for file delegation between agents in ADK."
+authors = [
+    {name = "Gemini", email = "gemini@google.com"},
+]
+requires-python = ">=3.10"
+dependencies = [
+    "google-adk",
+    "Pillow",
+    "pytest",
+    "google-genai",
+]
