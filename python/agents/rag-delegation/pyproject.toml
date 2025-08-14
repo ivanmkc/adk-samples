@@ -1,0 +1,18 @@
+[project]
+name = "rag-delegation"
+version = "0.1.0"
+description = "A PoC for a root agent delegating to a RAG sub-agent."
+authors = [
+    {name = "Gemini", email = "gemini@google.com"},
+]
+requires-python = ">=3.10"
+dependencies = [
+    "google-adk",
+    "pytest",
+    "python-dotenv",
+    "google-cloud-aiplatform",
+    "pytest-mock"
+]
+
+[tool.poetry]
+packages = [{include = "rag_delegation"}]
