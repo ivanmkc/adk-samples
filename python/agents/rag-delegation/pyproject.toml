@@ -11,8 +11,14 @@ dependencies = [
     "pytest",
     "python-dotenv",
     "google-cloud-aiplatform",
-    "pytest-mock"
+    "pytest-mock",
+    "llama_index",
+    "google-search-results",
+    "pytest-asyncio (>=1.1.0,<2.0.0)"
 ]
 
 [tool.poetry]
 packages = [{include = "rag_delegation"}]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
